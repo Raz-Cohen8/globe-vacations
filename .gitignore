@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+*.sqlite
+*.db
+node_modules/
+vendor/
+.vscode/
+.idea/
+includes/secrets.php
+backups/
