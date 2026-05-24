@@ -22,7 +22,6 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
 <body>
 
 <div class="stars" aria-hidden="true"></div>
-<div class="stars stars--far" aria-hidden="true"></div>
 
 <header class="topbar">
   <a href="/" class="brand">
@@ -43,6 +42,10 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
 
   <div id="globe-wrap" class="globe-wrap" role="img" aria-label="Interactive 3D globe">
     <div id="globe"></div>
+    <div id="globe-hint" class="globe-hint">Loading the planet…</div>
+  </div>
+
+  <div class="cta">
     <button id="spin-btn" type="button" class="spin-btn">
       <span class="spin-btn__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -52,7 +55,6 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
       </span>
       <span class="spin-btn__label">Spin the globe</span>
     </button>
-    <div id="globe-hint" class="globe-hint">Loading the planet…</div>
   </div>
 
   <!-- Destination reveal card -->
@@ -76,6 +78,16 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
       </div>
     </div>
     <p id="card-long" class="card__long"></p>
+    <div class="card__map">
+      <iframe
+        id="card-map"
+        class="card__map-frame"
+        title="Map of destination"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen></iframe>
+      <a id="card-map-link" class="card__map-link" href="#" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+    </div>
     <div class="card__actions">
       <a id="card-book" class="btn btn--primary" href="#" target="_blank" rel="noopener sponsored">
         <span>Find places to stay</span>

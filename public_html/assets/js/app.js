@@ -7,7 +7,7 @@
   'use strict';
 
   const TEXTURE_BASE = 'https://unpkg.com/three-globe@2.32.0/example/img';
-  const EARTH_DAY    = `${TEXTURE_BASE}/earth-blue-marble.jpg`;
+  const EARTH_DAY    = `${TEXTURE_BASE}/earth-day.jpg`;        // ~2K resolution (was 8K Blue Marble = 8MB)
   const EARTH_BUMP   = `${TEXTURE_BASE}/earth-topology.png`;
 
   const $ = (sel) => document.querySelector(sel);
@@ -35,6 +35,8 @@
     cardBook:     $('#card-book'),
     cardGpt:      $('#card-gpt'),
     cardRespin:   $('#card-respin'),
+    cardMap:      $('#card-map'),
+    cardMapLink:  $('#card-map-link'),
   };
 
   // ---------- Globe setup ----------
@@ -60,19 +62,22 @@
   fit();
   window.addEventListener('resize', fit);
 
-  // Renderer quality
+  // Renderer quality — cap pixel ratio at 1.5 (Retina would otherwise render 4x pixels,
+  // which freezes lower-spec machines on first paint)
   const renderer = globe.renderer();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   // Initial camera
   globe.pointOfView({ lat: 25, lng: 10, altitude: 2.6 }, 0);
 
-  // Auto-rotate
+  // Auto-rotate (gentle, only when idle)
   const controls = globe.controls();
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.35;
+  controls.autoRotateSpeed = 0.4;
   controls.enableZoom = true;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
   controls.minDistance = 180;
   controls.maxDistance = 600;
 
@@ -204,35 +209,81 @@
   }
 
   // ---------- Spin flow ----------
+  // Multi-rotation playful spin: ~3.5s of spinning around (2 extra full turns
+  // around the chosen direction) easing to a stop on the target, then zoom in,
+  // then ease back out so the user gets context.
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function shortestLngDelta(fromLng, toLng) {
+    let d = toLng - fromLng;
+    while (d > 180)  d -= 360;
+    while (d < -180) d += 360;
+    return d;
+  }
+
   function spinTo(dest) {
-    // Move the camera-target to the destination over a longer "spin" arc.
-    // Easing handled by globe.gl via second arg (ms). First a wide spin, then zoom in.
-    const TARGET_ALT = 0.55;
-    const SPIN_DURATION = 1800;
-    const ZOOM_HOLD_MS  = 1500;
-    const RETURN_ALT    = 1.2;
-    const RETURN_MS     = 1100;
+    const SPIN_DURATION = 3400;
+    const PIN_LAND_AT   = 2900;        // pin appears just before the globe settles
+    const ZOOM_IN_ALT   = 0.5;
+    const ZOOM_HOLD_MS  = 1200;
+    const RETURN_ALT    = 1.3;
+    const RETURN_MS     = 1000;
+    const EXTRA_TURNS   = 2;            // extra full rotations during the spin
 
     controls.autoRotate = false;
 
-    // Phase 1: spin to target
-    globe.pointOfView({ lat: dest.lat, lng: dest.lng, altitude: TARGET_ALT }, SPIN_DURATION);
+    const startView = globe.pointOfView();
+    const startLat  = startView.lat;
+    const startLng  = startView.lng;
+    const startAlt  = startView.altitude;
 
-    // Place pin halfway through, so it visibly "lands"
-    setTimeout(() => placePinAt(dest.lat, dest.lng), SPIN_DURATION * 0.55);
+    const baseDelta = shortestLngDelta(startLng, dest.lng);
+    // Direction of travel: same direction as the shortest path (or +1 if zero)
+    const direction = baseDelta >= 0 ? 1 : -1;
+    const lngDelta  = baseDelta + direction * 360 * EXTRA_TURNS;
 
-    // Phase 2: ease back out so the user can see the region
+    // Bow out slightly during the spin (camera pulls back a touch, then zooms in)
+    const peakAlt = Math.max(startAlt, 2.2);
+
+    const startedAt = performance.now();
+    function tick(now) {
+      const t = Math.min((now - startedAt) / SPIN_DURATION, 1);
+      const e = easeInOutCubic(t);
+
+      // Latitude eases linearly through ease-curve toward target
+      const lat = startLat + (dest.lat - startLat) * e;
+      const lng = startLng + lngDelta * e;
+
+      // Altitude: ramp up to peakAlt mid-spin, then descend to ZOOM_IN_ALT
+      // Triangle shape: 0 -> peak -> target
+      let alt;
+      if (e < 0.5) {
+        const k = e / 0.5;
+        alt = startAlt + (peakAlt - startAlt) * k;
+      } else {
+        const k = (e - 0.5) / 0.5;
+        alt = peakAlt + (ZOOM_IN_ALT - peakAlt) * k;
+      }
+
+      globe.pointOfView({ lat, lng, altitude: alt }, 0);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    setTimeout(() => placePinAt(dest.lat, dest.lng), PIN_LAND_AT);
+
     setTimeout(() => {
       globe.pointOfView({ lat: dest.lat, lng: dest.lng, altitude: RETURN_ALT }, RETURN_MS);
     }, SPIN_DURATION + ZOOM_HOLD_MS);
 
-    // Reveal card after the camera settles
     setTimeout(() => {
       revealCard(dest);
       state.isSpinning = false;
       els.spinBtn.disabled = false;
       els.spinBtn.classList.remove('is-spinning');
-    }, SPIN_DURATION + ZOOM_HOLD_MS + RETURN_MS - 200);
+    }, SPIN_DURATION + ZOOM_HOLD_MS + RETURN_MS - 150);
   }
 
   async function spin() {
@@ -263,6 +314,15 @@
     return `https://www.booking.com/searchresults.html?ss=${q}`;
   }
 
+  function mapEmbedUrl(dest) {
+    // Google Maps embed without API key. Zoom 5 gives regional context.
+    return `https://maps.google.com/maps?q=${dest.lat},${dest.lng}&z=5&output=embed`;
+  }
+  function mapOpenUrl(dest) {
+    const q = encodeURIComponent(`${dest.name}, ${dest.country}`);
+    return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  }
+
   function gptPrompt(dest) {
     return [
       `Plan a 5-day trip to ${dest.name}, ${dest.country} for me.`,
@@ -280,11 +340,17 @@
     els.cardBest.textContent     = dest.best_time || '—';
     els.cardCurrency.textContent = dest.currency || '—';
     els.cardBook.href            = bookingUrl(dest);
+    els.cardMap.src              = mapEmbedUrl(dest);
+    els.cardMapLink.href         = mapOpenUrl(dest);
     els.card.hidden = false;
     els.card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function hideCard() { els.card.hidden = true; }
+  function hideCard() {
+    els.card.hidden = true;
+    // Unload the iframe so it doesn't keep network connections open
+    if (els.cardMap.src) els.cardMap.src = 'about:blank';
+  }
 
   // ---------- Misc UI ----------
   function toast(msg) {
