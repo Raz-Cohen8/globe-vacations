@@ -10,4 +10,5 @@ vendor/
 .vscode/
 .idea/
 includes/secrets.php
+data/cache/
 backups/

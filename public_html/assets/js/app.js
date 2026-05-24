@@ -81,6 +81,7 @@
     cardMap:      $('#card-map'),
     cardMapLink:  $('#card-map-link'),
     cardShare:    $('#card-share'),
+    cardPhotos:      $('#card-photos'),
     cardPhotosTrack: $('#card-photos-track'),
     cardPhotosEmpty: $('#card-photos-empty'),
   };
@@ -455,12 +456,68 @@
     els.cardMapLink.href         = mapOpenUrl(dest);
     els.card.hidden = false;
     els.card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    loadPhotos(dest);
   }
 
   function hideCard() {
     els.card.hidden = true;
     // Unload the iframe so it doesn't keep network connections open
     if (els.cardMap.src) els.cardMap.src = 'about:blank';
+    els.cardPhotos.hidden = true;
+  }
+
+  // ---------- Pexels photos ----------
+  function renderPhotoSkeleton() {
+    els.cardPhotos.hidden = false;
+    els.cardPhotosEmpty.hidden = true;
+    els.cardPhotosTrack.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const sk = document.createElement('div');
+      sk.className = 'card__photo card__photo--skeleton';
+      els.cardPhotosTrack.appendChild(sk);
+    }
+  }
+
+  function renderPhotos(photos, dest) {
+    els.cardPhotosTrack.innerHTML = '';
+    if (!photos.length) {
+      els.cardPhotosEmpty.hidden = false;
+      return;
+    }
+    for (const p of photos) {
+      const link = document.createElement('a');
+      link.className = 'card__photo';
+      link.href      = p.page || p.photographer_url || p.url;
+      link.target    = '_blank';
+      link.rel       = 'noopener';
+      link.title     = p.photographer ? `Photo by ${p.photographer} on Pexels` : 'Photo on Pexels';
+
+      const img = document.createElement('img');
+      img.src     = p.url || p.thumb;
+      img.alt     = p.alt || `${dest.name}, ${dest.country}`;
+      img.loading = 'lazy';
+
+      link.appendChild(img);
+      els.cardPhotosTrack.appendChild(link);
+    }
+  }
+
+  async function loadPhotos(dest) {
+    renderPhotoSkeleton();
+    const q = dest.image_keywords || `${dest.name} ${dest.country}`;
+    try {
+      const res  = await fetch(`/api/photos.php?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!data.configured) {
+        // No API key configured yet — hide the section silently.
+        els.cardPhotos.hidden = true;
+        return;
+      }
+      renderPhotos(data.photos || [], dest);
+    } catch (e) {
+      console.warn('photos fetch failed', e);
+      els.cardPhotos.hidden = true;
+    }
   }
 
   // ---------- Misc UI ----------

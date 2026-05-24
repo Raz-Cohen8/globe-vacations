@@ -81,7 +81,8 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
 
     <div id="card-photos" class="card__photos" aria-label="Photos of the destination" hidden>
       <div class="card__photos-track" id="card-photos-track"></div>
-      <div class="card__photos-empty" id="card-photos-empty" hidden>Photos couldn't load — try the map instead.</div>
+      <div class="card__photos-empty" id="card-photos-empty" hidden>No photos available — try the map instead.</div>
+      <a class="card__photos-credit" href="https://www.pexels.com" target="_blank" rel="noopener">Photos via Pexels</a>
     </div>
 
     <div class="card__map">

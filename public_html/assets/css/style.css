@@ -389,6 +389,16 @@ body {
   from { background-position: 200% 0; }
   to   { background-position: -200% 0; }
 }
+.card__photos-credit {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.card__photos-credit:hover { color: var(--ink-1); }
 
 /* Embedded map */
 .card__map {
