@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+// Suppress in-band warnings so PHP notices/deprecations can't corrupt the JSON body.
+// Errors still go to error_log on Hostinger.
+ini_set('display_errors', '0');
+
 require __DIR__ . '/../../includes/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -47,7 +51,7 @@ curl_setopt_array($ch, [
 $raw    = curl_exec($ch);
 $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $cerr   = curl_error($ch);
-curl_close($ch);
+// PHP 8.0+ frees the handle automatically; curl_close() is a no-op (and deprecated in 8.5).
 
 if (!$raw || $status !== 200) {
     http_response_code(502);
