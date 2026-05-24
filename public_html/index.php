@@ -78,6 +78,12 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
       </div>
     </div>
     <p id="card-long" class="card__long"></p>
+
+    <div id="card-photos" class="card__photos" aria-label="Photos of the destination" hidden>
+      <div class="card__photos-track" id="card-photos-track"></div>
+      <div class="card__photos-empty" id="card-photos-empty" hidden>Photos couldn't load — try the map instead.</div>
+    </div>
+
     <div class="card__map">
       <iframe
         id="card-map"
@@ -88,6 +94,7 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
         allowfullscreen></iframe>
       <a id="card-map-link" class="card__map-link" href="#" target="_blank" rel="noopener">Open in Google Maps ↗</a>
     </div>
+
     <div class="card__actions">
       <a id="card-book" class="btn btn--primary" href="#" target="_blank" rel="noopener sponsored">
         <span>Find places to stay</span>
@@ -96,6 +103,10 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
       <button id="card-gpt" class="btn btn--ghost" type="button">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>Ask ChatGPT about it</span>
+      </button>
+      <button id="card-share" class="btn btn--ghost" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+        <span>Invite a friend</span>
       </button>
       <button id="card-respin" class="btn btn--text" type="button">
         Try another →

@@ -38,6 +38,17 @@ final class Destinations
         return $all[random_int(0, count($all) - 1)];
     }
 
+    /** @return array<string, mixed>|null */
+    public function byId(int $id): ?array
+    {
+        foreach ($this->all() as $d) {
+            if ((int) $d['id'] === $id) {
+                return $d;
+            }
+        }
+        return null;
+    }
+
     /** @return array<int, array{id:int,lat:float,lng:float}> */
     public function pinPoints(): array
     {

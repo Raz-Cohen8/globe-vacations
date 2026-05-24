@@ -9,6 +9,49 @@
   const TEXTURE_BASE = 'https://unpkg.com/three-globe@2.32.0/example/img';
   const EARTH_DAY    = `${TEXTURE_BASE}/earth-day.jpg`;        // ~2K resolution (was 8K Blue Marble = 8MB)
   const EARTH_BUMP   = `${TEXTURE_BASE}/earth-topology.png`;
+  const COUNTRIES    = '/assets/data/countries.geojson';
+
+  // Hand-picked major-country labels (capital coords). Kept small so the globe
+  // doesn't get busy — the user asked for hints, not a textbook.
+  const COUNTRY_LABELS = [
+    { name: 'USA',       lat: 38.9,  lng: -77.04 },
+    { name: 'Canada',    lat: 45.42, lng: -75.69 },
+    { name: 'Mexico',    lat: 19.43, lng: -99.13 },
+    { name: 'Brazil',    lat: -15.78, lng: -47.93 },
+    { name: 'Argentina', lat: -34.6, lng: -58.38 },
+    { name: 'Peru',      lat: -12.05, lng: -77.04 },
+    { name: 'Colombia',  lat: 4.71,  lng: -74.07 },
+    { name: 'UK',        lat: 51.51, lng: -0.13 },
+    { name: 'France',    lat: 48.85, lng: 2.35 },
+    { name: 'Spain',     lat: 40.42, lng: -3.7 },
+    { name: 'Portugal',  lat: 38.72, lng: -9.14 },
+    { name: 'Germany',   lat: 52.52, lng: 13.4 },
+    { name: 'Italy',     lat: 41.9,  lng: 12.5 },
+    { name: 'Greece',    lat: 37.98, lng: 23.73 },
+    { name: 'Turkey',    lat: 41.01, lng: 28.98 },
+    { name: 'Egypt',     lat: 30.04, lng: 31.24 },
+    { name: 'Morocco',   lat: 33.97, lng: -6.85 },
+    { name: 'Nigeria',   lat: 9.08,  lng: 7.4 },
+    { name: 'Kenya',     lat: -1.29, lng: 36.82 },
+    { name: 'S. Africa', lat: -25.75, lng: 28.19 },
+    { name: 'Russia',    lat: 55.75, lng: 37.62 },
+    { name: 'China',     lat: 39.9,  lng: 116.4 },
+    { name: 'Japan',     lat: 35.68, lng: 139.69 },
+    { name: 'S. Korea',  lat: 37.57, lng: 126.98 },
+    { name: 'India',     lat: 28.61, lng: 77.21 },
+    { name: 'Thailand',  lat: 13.76, lng: 100.5 },
+    { name: 'Vietnam',   lat: 21.03, lng: 105.85 },
+    { name: 'Indonesia', lat: -6.21, lng: 106.85 },
+    { name: 'Australia', lat: -35.28, lng: 149.13 },
+    { name: 'New Zealand', lat: -41.29, lng: 174.78 },
+    { name: 'Saudi Arabia', lat: 24.71, lng: 46.68 },
+    { name: 'Iran',      lat: 35.69, lng: 51.39 },
+    { name: 'Israel',    lat: 31.78, lng: 35.22 },
+    { name: 'Norway',    lat: 59.91, lng: 10.75 },
+    { name: 'Sweden',    lat: 59.33, lng: 18.07 },
+    { name: 'Iceland',   lat: 64.13, lng: -21.94 },
+    { name: 'Chile',     lat: -33.45, lng: -70.67 },
+  ];
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -37,6 +80,9 @@
     cardRespin:   $('#card-respin'),
     cardMap:      $('#card-map'),
     cardMapLink:  $('#card-map-link'),
+    cardShare:    $('#card-share'),
+    cardPhotosTrack: $('#card-photos-track'),
+    cardPhotosEmpty: $('#card-photos-empty'),
   };
 
   // ---------- Globe setup ----------
@@ -48,7 +94,7 @@
     .atmosphereColor('#6fb3ff')
     .atmosphereAltitude(0.22)
     .pointsData([])
-    .pointAltitude(0.005)
+    .pointAltitude(0.012)
     .pointRadius(0.18)
     .pointColor(() => 'rgba(244, 162, 97, 0.85)')
     .pointsMerge(true)
@@ -202,9 +248,48 @@
     }
   }
 
+  async function loadCountries() {
+    try {
+      const res = await fetch(COUNTRIES);
+      if (!res.ok) throw new Error('countries http ' + res.status);
+      const geo = await res.json();
+
+      // Polygons (country borders, very subtle fill + warm gold stroke).
+      // globe.gl animates from prior altitude (0) when polygonsTransitionDuration is set.
+      globe
+        .polygonsTransitionDuration(1600)
+        .polygonAltitude(0.006)
+        .polygonCapColor(() => 'rgba(255, 255, 255, 0.018)')
+        .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
+        .polygonStrokeColor(() => 'rgba(244, 162, 97, 0.32)')
+        .polygonsData(geo.features);
+
+      // Labels for major countries only — animated in over 2.2s.
+      globe
+        .labelsTransitionDuration(2200)
+        .labelLat((d) => d.lat)
+        .labelLng((d) => d.lng)
+        .labelText((d) => d.name)
+        .labelSize(0.42)
+        .labelDotRadius(0.15)
+        .labelColor(() => 'rgba(255, 255, 255, 0.55)')
+        .labelResolution(2)
+        .labelAltitude(0.012)
+        .labelsData(COUNTRY_LABELS);
+    } catch (e) {
+      console.warn('Could not load countries layer', e);
+    }
+  }
+
   async function fetchRandomDestination() {
     const res = await fetch('/api/random-destination.php');
     if (!res.ok) throw new Error('random http ' + res.status);
+    return res.json();
+  }
+
+  async function fetchDestinationById(id) {
+    const res = await fetch(`/api/destination.php?id=${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('byId http ' + res.status);
     return res.json();
   }
 
@@ -324,12 +409,38 @@
   }
 
   function gptPrompt(dest) {
+    const book = bookingUrl(dest);
     return [
       `Plan a 5-day trip to ${dest.name}, ${dest.country} for me.`,
       `Tagline of the place: "${dest.tagline}".`,
       `Best time to go: ${dest.best_time}.`,
       `Give me a realistic day-by-day itinerary with 1–2 unmissable activities per day, where to eat (with a budget option and a splurge), where to stay (neighborhood-level), an approximate total budget in USD for a mid-range traveler, and one off-the-beaten-path tip locals would mention. Keep it concrete.`,
+      `When you recommend hotels or places to book, please include this comparison link in your reply so I can check rates: ${book}`,
     ].join(' ');
+  }
+
+  function shareUrl(dest) {
+    return `${location.origin}/?dest=${dest.id}`;
+  }
+
+  function shareText(dest) {
+    return `I'm thinking ${dest.name}, ${dest.country} — "${dest.tagline}". Spin the globe for yours:`;
+  }
+
+  async function shareDestination(dest) {
+    const url  = shareUrl(dest);
+    const text = shareText(dest);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${dest.name} — Globe Vacations`, text, url });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // user dismissed
+        // fall through to clipboard fallback
+      }
+    }
+    const ok = await copyToClipboard(`${text}\n${url}`);
+    toast(ok ? 'Link copied — paste it to your friend' : 'Could not copy link');
   }
 
   function revealCard(dest) {
@@ -395,6 +506,10 @@
     toast(ok ? 'Prompt copied. Opening ChatGPT…' : 'Opening ChatGPT…');
     window.open('https://chat.openai.com/', '_blank', 'noopener');
   });
+  els.cardShare.addEventListener('click', () => {
+    if (!state.destination) return;
+    shareDestination(state.destination);
+  });
 
   document.querySelectorAll('[data-scroll]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -404,11 +519,41 @@
     });
   });
 
+  // ---------- Deep link (?dest=ID) ----------
+  async function maybeHandleDeepLink() {
+    const params = new URLSearchParams(location.search);
+    const idStr  = params.get('dest');
+    if (!idStr) return false;
+    const id = parseInt(idStr, 10);
+    if (!Number.isFinite(id)) return false;
+    try {
+      const dest = await fetchDestinationById(id);
+      state.destination = dest;
+      // Wait a beat for textures + countries layer to settle, then spin.
+      setTimeout(() => {
+        state.isSpinning = true;
+        els.spinBtn.disabled = true;
+        els.spinBtn.classList.add('is-spinning');
+        spinTo(dest);
+      }, 1700);
+      return true;
+    } catch (e) {
+      console.warn('Deep link failed', e);
+      return false;
+    }
+  }
+
   // ---------- Boot ----------
   loadPins();
-  setTimeout(() => {
-    els.hint.textContent = 'Click "Spin the globe" to begin';
-    els.hint.classList.add('is-visible');
-  }, 1200);
+  loadCountries();
+
+  maybeHandleDeepLink().then((didDeepLink) => {
+    setTimeout(() => {
+      els.hint.textContent = didDeepLink
+        ? 'A friend picked this one for you'
+        : 'Click "Spin the globe" to begin';
+      els.hint.classList.add('is-visible');
+    }, 1200);
+  });
 
 })();
