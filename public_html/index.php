@@ -12,6 +12,16 @@ $jsV  = filemtime(__DIR__ . '/assets/js/app.js');
 <meta name="theme-color" content="#0a0e27">
 <title>Globe Vacations — Spin the World, Find Your Next Trip</title>
 
+<!-- Travelpayouts Drive (affiliate tracking) -->
+<script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1">
+  (function () {
+      var script = document.createElement("script");
+      script.async = 1;
+      script.src = 'https://emrldtp.cc/NTMyNjgx.js?t=532681';
+      document.head.appendChild(script);
+  })();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://unpkg.com" crossorigin>
