@@ -3,6 +3,3 @@ parameters:
   paths:
     - public_html
     - includes
-  ignoreErrors:
-    - '#Constant SITE_.+ not found#'
-    - '#Constant DB_.+ not found#'
