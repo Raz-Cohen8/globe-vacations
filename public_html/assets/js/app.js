@@ -76,6 +76,7 @@
     cardBest:     $('#card-best'),
     cardCurrency: $('#card-currency'),
     cardBook:     $('#card-book'),
+    cardTours:    $('#card-tours'),
     cardGpt:      $('#card-gpt'),
     cardRespin:   $('#card-respin'),
     cardMap:      $('#card-map'),
@@ -400,6 +401,20 @@
     return `https://www.booking.com/searchresults.html?ss=${q}`;
   }
 
+  // Klook activities, tracked via Travelpayouts. The aff_pid + aff_adid + utm_*
+  // combo is what attributes the click to Raz's TP account (extracted from his
+  // short link: https://klook.tpx.li/3R0R0biM).
+  function klookUrl(dest) {
+    const q = encodeURIComponent(`${dest.name} ${dest.country}`);
+    const params =
+      'aff_pid=732374' +
+      '&aff_adid=1284717' +
+      '&utm_medium=affiliate-alwayson' +
+      '&utm_source=network' +
+      '&utm_campaign=13694';
+    return `https://www.klook.com/en/search/result/?query=${q}&${params}`;
+  }
+
   function mapEmbedUrl(dest) {
     // Google Maps embed without API key. Zoom 5 gives regional context.
     return `https://maps.google.com/maps?q=${dest.lat},${dest.lng}&z=5&output=embed`;
@@ -452,6 +467,7 @@
     els.cardBest.textContent     = dest.best_time || '—';
     els.cardCurrency.textContent = dest.currency || '—';
     els.cardBook.href            = bookingUrl(dest);
+    els.cardTours.href           = klookUrl(dest);
     els.cardMap.src              = mapEmbedUrl(dest);
     els.cardMapLink.href         = mapOpenUrl(dest);
     els.card.hidden = false;
