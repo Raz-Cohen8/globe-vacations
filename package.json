@@ -1,0 +1,14 @@
+{
+  "name": "globe-vacations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tooling for QA only — runtime is PHP. JS assets are loaded directly from CDN.",
+  "scripts": {
+    "lint": "eslint public_html/assets/js"
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0"
+  }
+}
