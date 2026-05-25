@@ -3,10 +3,6 @@ parameters:
   paths:
     - public_html
     - includes
-  excludePaths:
-    - vendor
-    - node_modules
-    - data
   ignoreErrors:
     - '#Constant SITE_.+ not found#'
     - '#Constant DB_.+ not found#'
