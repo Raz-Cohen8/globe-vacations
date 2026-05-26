@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  php-lint:
+    name: PHP syntax lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - name: Lint all PHP files
+        run: |
+          set -e
+          find public_html includes -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+  phpstan:
+    name: PHPStan static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: phpstan
+      - name: Run PHPStan
+        run: phpstan analyse --configuration=phpstan.neon --no-progress --error-format=github
+
+  js-lint:
+    name: JS lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+      - name: Run ESLint
+        run: npm run lint
+
+  secrets-scan:
+    name: Secret scan + secrets.php guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify secrets.php is gitignored and untracked
+        run: |
+          set -e
+          if git ls-files --error-unmatch includes/secrets.php >/dev/null 2>&1; then
+            echo "::error::includes/secrets.php is tracked in git. It must remain gitignored."
+            exit 1
+          fi
+          if ! grep -qE '^includes/secrets\.php$' .gitignore; then
+            echo "::error::includes/secrets.php is missing from .gitignore."
+            exit 1
+          fi
+          echo "OK: secrets.php is gitignored and untracked."
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
