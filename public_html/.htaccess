@@ -1,0 +1,8 @@
+# Block access to dotfiles (.env, .git, .htaccess, etc.).
+# Common bot-scanner targets that should never be served.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Disable directory listing.
+Options -Indexes
